@@ -10,15 +10,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
     <style>
         #map { height: 100vh; width: 100vw; }
+        #buttons { position: absolute; top: 10px; left: 10px; z-index: 1000; background: white; padding: 5px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
 <div id="map"></div>
+<div id="buttons">
+    <button onclick="saveGeoJSON()">Save GeoJSON</button>
+    <button onclick="addPolygon()">Add Polygon</button>
+</div>
 
 <script>
     // Initialize the map
-    var map = L.map('map').setView([9, 39], 6); // Centered around Ethiopia
+    var map = L.map('map', { editable: true }).setView([9, 39], 6); // Centered around Ethiopia
 
     // Add a satellite basemap (Esri)
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -29,34 +34,38 @@
     map.editTools = new L.Editable(map);
 
     // Load GeoJSON from GitHub
-    var geojsonLayer = new L.geoJSON(null, {
+    var geojsonLayer = L.geoJSON(null, {
         onEachFeature: function (feature, layer) {
-            layer.bindPopup('Editable Feature');
+            layer.bindPopup('Click to edit');
             layer.on('click', function () {
                 layer.enableEdit(); // Enable editing when clicked
             });
         }
-    });
+    }).addTo(map);
 
     // Fetch and load GeoJSON
-    var githubGeoJSONUrl = "https://raw.githubusercontent.com/mezgebeabebe/industrypark/refs/heads/main/updated_features.geojson";
+    var githubGeoJSONUrl = "https://raw.githubusercontent.com/mezgebeabebe/industrypark/main/updated_features.geojson";
     fetch(githubGeoJSONUrl)
         .then(response => response.json())
         .then(data => {
             geojsonLayer.addData(data);
-            geojsonLayer.addTo(map);
+            geojsonLayer.eachLayer(function (layer) {
+                layer.enableEdit(); // Make all layers editable
+            });
         })
         .catch(error => console.error('Error loading GeoJSON:', error));
 
-    // Save edited GeoJSON (log to console for now)
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 's') { // Press 'S' to save
-            var editedData = geojsonLayer.toGeoJSON();
-            console.log("Edited GeoJSON:", JSON.stringify(editedData));
-            alert("GeoJSON data logged to console!");
-        }
-    });
+    // Function to save edited GeoJSON
+    function saveGeoJSON() {
+        var editedData = geojsonLayer.toGeoJSON();
+        console.log("Edited GeoJSON:", JSON.stringify(editedData));
+        alert("Edited GeoJSON logged to console!");
+    }
 
+    // Function to add a new polygon
+    function addPolygon() {
+        var polygon = map.editTools.startPolygon();
+    }
 </script>
 
 </body>
